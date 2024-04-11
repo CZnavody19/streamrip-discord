@@ -1,15 +1,19 @@
-from discord import app_commands, Intents, Client, Interaction
+from discord import Client as DiscordClient
+from discord import app_commands, Intents, Interaction
 from dotenv import load_dotenv
+from requests import get
 from os import getenv
 from re import compile
+from streamrip.client import Client as StreamRipClient
 from streamrip.config import Config
-from streamrip.client import Client, QobuzClient
+from streamrip.client import QobuzClient, DeezerClient
 from streamrip.db import Database, Downloads, Failed
 from streamrip.media import Pending, PendingSingle, Media, Track
 
 load_dotenv()
 
 url_regex = compile(r"https?://(?:www|open|play|listen)?\.?(qobuz|tidal|deezer)\.com(?:(?:/(album|artist|track|playlist|video|label))|(?:\/[-\w]+?))+\/([-\w]+)")
+deezer_dynamic_url_regex = compile(r"https://deezer\.page\.link/\w+")
 
 media_message_template = "{} by {} [{}]"
 
@@ -18,7 +22,7 @@ rip_config.session.downloads.folder = getenv("STREAMRIP_FOLDER")
 
 rip_db = Database(downloads=Downloads(getenv("STREAMRIP_DB_DOWNLOADS")), failed=Failed(getenv("STREAMRIP_DB_FAILED")))
 
-async def get_client(provider: str) -> Client:
+async def get_client(provider: str) -> StreamRipClient:
     match provider:
         case "qobuz":
             rip_config.session.qobuz.use_auth_token = True
@@ -32,10 +36,20 @@ async def get_client(provider: str) -> Client:
 
             return rip_client
         
+        case "deezer":
+            rip_config.session.deezer.arl = getenv("DEEZER_ARL")
+
+            rip_client = DeezerClient(rip_config)
+            await rip_client.login()
+            if not rip_client.logged_in:
+                raise ConnectionError
+            
+            return rip_client
+        
         case _:
             raise NotImplementedError
 
-def get_pending(type: str, id: str, client: Client, config: Config, database: Database) -> Pending:
+def get_pending(type: str, id: str, client: StreamRipClient, config: Config, database: Database) -> Pending:
     match type:
         case "track":
             return PendingSingle(id=id, client=client, config=config, db=database)
@@ -47,6 +61,9 @@ def get_media_message(media: Media) -> str:
     match media:
         case Track():
             return media_message_template.format(media.meta.title, media.meta.artist, "{}/{}".format(media.meta.info.sampling_rate, media.meta.info.bit_depth))
+        
+def get_deezer_url(url: str) -> str:
+    return get(url).url
 
 def setup_commands(tree):
     @app_commands.command(name="download", description="Download a song")
@@ -54,11 +71,16 @@ def setup_commands(tree):
     async def download(interaction: Interaction, url: str):
         await interaction.response.defer(ephemeral=True, thinking=True)
 
+        deezer_regex = deezer_dynamic_url_regex.match(url)
+        if deezer_regex is not None:
+            url = get_deezer_url(url)
+
         regex = url_regex.match(url)
         if regex is None:
             return await interaction.followup.send("Invalid URL")
         
         provider, type, id = regex.groups()
+
         client = None
         try:
             client = await get_client(provider=provider)
@@ -92,7 +114,7 @@ def main():
     intents = Intents.default()
     intents.message_content = True
 
-    client = Client(intents=intents)
+    client = DiscordClient(intents=intents)
     tree = app_commands.CommandTree(client) 
 
     setup_commands(tree=tree)
