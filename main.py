@@ -19,6 +19,7 @@ media_message_template = "{} by {} [{}]"
 
 rip_config = Config.defaults()
 rip_config.session.downloads.folder = getenv("STREAMRIP_FOLDER")
+rip_config.session.filepaths.add_singles_to_folder = True
 
 rip_db = Database(downloads=Downloads(getenv("STREAMRIP_DB_DOWNLOADS")), failed=Failed(getenv("STREAMRIP_DB_FAILED")))
 
