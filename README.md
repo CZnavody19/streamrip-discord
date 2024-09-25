@@ -21,14 +21,14 @@ If you want to use the `load_to_db.py` script, you also need to install the [`mu
 
 -   [x] Qobuz
     -   [x] Tracks
-    -   [ ] Albums
+    -   [x] Albums  (untested so far)
     -   [ ] Playlists
     -   [ ] Discographies
     -   [ ] Labels
 -   [ ] Tidal
 -   [x] Deezer
     -   [x] Tracks
-    -   [ ] Albums
+    -   [x] Albums  (untested so far)
     -   [ ] Playlists
     -   [ ] Discographies
     -   [ ] Labels

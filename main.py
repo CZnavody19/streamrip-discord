@@ -8,7 +8,7 @@ from streamrip.client import Client as StreamRipClient
 from streamrip.config import Config
 from streamrip.client import QobuzClient, DeezerClient
 from streamrip.db import Database, Downloads, Failed
-from streamrip.media import Pending, PendingSingle, Media, Track
+from streamrip.media import Pending, PendingSingle, Media, Track, PendingAlbum, Album
 
 load_dotenv()
 
@@ -54,6 +54,9 @@ def get_pending(type: str, id: str, client: StreamRipClient, config: Config, dat
     match type:
         case "track":
             return PendingSingle(id=id, client=client, config=config, db=database)
+    
+        case "album":
+            return PendingAlbum(id=id, client=client, config=config, db=database)
 
         case _:
             raise NotImplementedError
@@ -62,6 +65,9 @@ def get_media_message(media: Media) -> str:
     match media:
         case Track():
             return media_message_template.format(media.meta.title, media.meta.artist, "{}/{}".format(media.meta.info.sampling_rate, media.meta.info.bit_depth))
+        
+        case Album():
+            return media_message_template.format(media.meta.album, media.meta.albumartist, "{}/{}".format(media.meta.info.sampling_rate, media.meta.info.bit_depth))
         
 def get_deezer_url(url: str) -> str:
     return get(url).url
