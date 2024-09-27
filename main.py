@@ -17,6 +17,8 @@ deezer_dynamic_url_regex = compile(r"https://deezer\.page\.link/\w+")
 
 media_message_template = "{} by {} [{}]"
 
+plex_url_template = "{}://{}:{}/library/sections/{}/refresh"
+
 rip_config = Config.defaults()
 rip_config.session.downloads.folder = getenv("STREAMRIP_FOLDER")
 rip_config.session.filepaths.add_singles_to_folder = True
@@ -115,7 +117,22 @@ def setup_commands(tree):
         client.session.connector.close()
         client.session.close()
 
+    @app_commands.command(name="scan", description="Rescan the Plex library")
+    async def scan(interaction: Interaction):
+        await interaction.response.defer(ephemeral=True, thinking=True)
+
+        url = plex_url_template.format(getenv("PLEX_SERVER_PROTOCOL"), getenv("PLEX_SERVER_URL"), getenv("PLEX_SERVER_PORT"), getenv("PLEX_LIBRARY_ID"))
+        params = {"X-Plex-Token": getenv("PLEX_TOKEN")}
+        response = get(url=url, params=params)
+
+        if response.status_code == 200:
+            return await interaction.followup.send("Successfully rescaned the library")
+
+        await interaction.followup.send("Failed to refresh the library with error code {}".format(response.status_code))
+
     tree.add_command(download)
+    if getenv("ENABLE_PLEX_REFRESH").lower() == "true":
+        tree.add_command(scan)
 
 def main():
     intents = Intents.default()

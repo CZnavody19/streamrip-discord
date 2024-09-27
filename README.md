@@ -3,6 +3,7 @@
 ## Function
 
 -   `/download <url>` command to download the media (Qobuz tracks and Deezer standard and dynamic URLs are supported)
+-   `/scan` command to rescan the plex library (only one server and library is supported)
 
 ## Installation
 
@@ -33,3 +34,16 @@ If you want to use the `load_to_db.py` script, you also need to install the [`mu
     -   [ ] Discographies
     -   [ ] Labels
 -   [ ] SoundCloud
+
+## Plex integration
+
+You can optionaly set up an integration with Plex media server to refresh your music library with a command
+
+### How to find your token:
+-   In your web browser open your plex server web ui
+-   Open devtools and go to network
+-   Find a request with `X-Plex-Token` in the url and copy the token
+
+### To get your library id go to the [plex API documentation page](https://plexapi.dev/api-reference/library/get-all-libraries) and run the request
+
+##### The number you are looking for is under the "key" field
